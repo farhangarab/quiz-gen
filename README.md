@@ -1,90 +1,141 @@
-# AI-Assisted Debugging and Feature Development
+# AI-Assisted Optimization and Feature Expansion
 
 ## Overview
 
-This project is a Python-based application that generates multiple-choice questions using an AI API (OpenRouter). The program takes a topic, number of questions, and difficulty level as input and returns formatted multiple-choice questions.
+This project is a Python application that generates multiple-choice questions using an AI API (OpenRouter). The goal of this assignment was to optimize the codebase for better readability, maintainability, and overall structure using AI tools.
 
 ---
 
 ## AI Tools Used
 
-* ChatGPT (for debugging, improving code, and identifying edge cases)
-* GitHub Copilot (used in Visual Studio Code for suggestions and fixes)
+* ChatGPT (used to suggest optimizations, refactor code, and explain improvements)
+* GitHub Copilot (used in Visual Studio Code for inline suggestions)
 
 ---
 
-## Debugging Process
+## Optimizations Made
 
-Using AI tools, I analyzed the original code and identified several issues:
+### ✅ Accepted Optimizations
 
-* Missing error handling for API requests
-* Possible crashes when parsing invalid JSON responses
-* Unsafe access to API response fields
-* No validation for user input (number of questions)
-* Weak parsing logic that could break if AI output format changes
+1. Modular Code Structure
 
-### Fixes Applied:
+* Refactored the program into smaller, focused functions:
 
-* Added try/except blocks for network errors and JSON parsing
-* Validated API response structure before accessing data
-* Handled incorrect or missing API responses safely
-* Converted user input into correct data types
-* Added validation to skip malformed questions
+  * `build_prompt()`
+  * `make_api_request()`
+  * `extract_text_from_response()`
+  * `parse_questions()`
+  * `save_questions_to_file()`
+* This improved readability and made the code easier to maintain and debug.
+
+2. Use of Constants
+
+* Introduced constants such as:
+
+  * `API_URL`
+  * `MODEL`
+  * `REQUIRED_FIELDS`
+* This avoids repetition and makes future updates easier.
+
+3. Improved Variable Naming
+
+* Replaced unclear variable names with meaningful ones:
+
+  * `p` → `part`
+  * `qs` → `questions`
+* This significantly improved code clarity.
+
+4. Separation of Concerns
+
+* Divided responsibilities across functions:
+
+  * API handling
+  * Data extraction
+  * Parsing
+  * User input
+* This makes the code more organized and scalable.
+
+5. Enhanced Error Handling
+
+* Added try/except blocks for:
+
+  * Network errors
+  * JSON parsing errors
+  * API response structure issues
+* Prevents crashes and improves robustness.
+
+6. Input Validation
+
+* Ensured user inputs are valid:
+
+  * Number must be an integer
+  * Difficulty must be one of: easy, medium, hard
+
+7. Centralized Validation Logic
+
+* Introduced `REQUIRED_FIELDS` to validate question format
+* Avoids repeating validation logic and improves maintainability
 
 ---
 
-## Feature Improvements
+### ❌ Rejected Optimizations
 
-The following features were added:
+1. Regex-Based Parsing
 
-* Difficulty level selection (easy, medium, hard)
-* Input validation for user entries
-* Ability to save generated questions to a text file
-* Improved prompt design for more consistent AI output
-* Basic format validation for generated questions
+* AI suggested using regular expressions for parsing questions
+* Rejected because:
+
+  * Adds unnecessary complexity
+  * Current approach is simpler and sufficient for the expected format
+
+2. Asynchronous API Requests
+
+* AI suggested using async/await for API calls
+* Rejected because:
+
+  * Only a single request is made at a time
+  * Would make the code more complex without significant benefit
+
+---
+
+## CLEAR Evaluation
+
+Each AI suggestion was evaluated using the CLEAR checklist:
+
+* **Correct**
+  Verified that all changes worked correctly and did not introduce new bugs.
+
+* **Logical**
+  Ensured the optimizations made sense within the program structure and flow.
+
+* **Efficient**
+  Evaluated whether the changes improved performance or reduced unnecessary operations.
+
+* **Appropriate**
+  Avoided over-engineering or adding complexity that is not needed for this project.
+
+* **Readable**
+  Prioritized clean, understandable code with clear structure and naming.
 
 ---
 
 ## Testing
 
-The program was tested with different inputs:
+The optimized code was tested using multiple inputs:
 
-### Test Cases:
-
-* Topic: Math, Difficulty: Easy
-* Topic: Physics, Difficulty: Medium
-* Topic: History, Difficulty: Hard
+* Topic: Math (easy)
+* Topic: Physics (medium)
+* Topic: History (hard)
 
 ### Results:
 
-* The program handled API errors without crashing
-* Output format remained mostly consistent
-* Invalid or malformed questions were skipped safely
-* File saving functionality worked correctly
-
----
-
-## Challenges
-
-* Ensuring consistent output format from AI responses
-* Handling unexpected API response structures
-* Designing reliable parsing logic
+* Program handled API and input errors without crashing
+* Output format remained consistent
+* Invalid questions were safely skipped
+* Code became easier to read and extend
 
 ---
 
 ## Conclusion
 
-Using AI tools significantly improved the debugging process and code quality. AI assistance helped identify hidden issues, suggest improvements, and speed up development. The final program is more stable, user-friendly, and robust.
-
----
-
-## How to Run the Project
-
-1. Install dependencies:
-   pip install requests python-dotenv
-
-2. Create a `.env` file and add your API key:
-   OPENROUTER_KEY=your_api_key_here
-
-3. Run the program:
-   python your_script_name.py
+Using AI tools significantly improved the quality of the codebase. The optimizations made the program more modular, readable, and maintainable. Not all AI suggestions were accepted, and the CLEAR checklist helped ensure that only meaningful and appropriate improvements were applied.
