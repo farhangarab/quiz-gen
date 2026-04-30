@@ -1,141 +1,67 @@
-# AI-Assisted Optimization and Feature Expansion
+# AI Quiz Generator
 
 ## Overview
 
-This project is a Python application that generates multiple-choice questions using an AI API (OpenRouter). The goal of this assignment was to optimize the codebase for better readability, maintainability, and overall structure using AI tools.
+This Streamlit application generates multiple-choice quiz questions with the OpenRouter AI API. A user enters a topic, chooses a difficulty, selects the number of questions, and completes an interactive quiz with scoring and explanations.
 
----
+## Setup
 
-## AI Tools Used
+1. Create and activate a Python virtual environment.
+2. Install dependencies:
 
-* ChatGPT (used to suggest optimizations, refactor code, and explain improvements)
-* GitHub Copilot (used in Visual Studio Code for inline suggestions)
+   ```bash
+   pip install -r requirements.txt
+   ```
 
----
+3. Copy `.env.example` to `.env`.
+4. Add your OpenRouter API key:
 
-## Optimizations Made
+   ```text
+   OPENROUTER_KEY=your_openrouter_api_key_here
+   ```
 
-### ✅ Accepted Optimizations
+5. Run the app:
 
-1. Modular Code Structure
+   ```bash
+   streamlit run app.py
+   ```
 
-* Refactored the program into smaller, focused functions:
+## Security Review
 
-  * `build_prompt()`
-  * `make_api_request()`
-  * `extract_text_from_response()`
-  * `parse_questions()`
-  * `save_questions_to_file()`
-* This improved readability and made the code easier to maintain and debug.
+The project was reviewed for the following risks:
 
-2. Use of Constants
+- Missing input validation
+- Hardcoded secrets
+- Overly permissive AI prompt logic
+- Weak validation of AI-generated output
+- Lack of graceful error handling
+- Unnecessary third-party script injection
 
-* Introduced constants such as:
+## Security Improvements Made
 
-  * `API_URL`
-  * `MODEL`
-  * `REQUIRED_FIELDS`
-* This avoids repetition and makes future updates easier.
-
-3. Improved Variable Naming
-
-* Replaced unclear variable names with meaningful ones:
-
-  * `p` → `part`
-  * `qs` → `questions`
-* This significantly improved code clarity.
-
-4. Separation of Concerns
-
-* Divided responsibilities across functions:
-
-  * API handling
-  * Data extraction
-  * Parsing
-  * User input
-* This makes the code more organized and scalable.
-
-5. Enhanced Error Handling
-
-* Added try/except blocks for:
-
-  * Network errors
-  * JSON parsing errors
-  * API response structure issues
-* Prevents crashes and improves robustness.
-
-6. Input Validation
-
-* Ensured user inputs are valid:
-
-  * Number must be an integer
-  * Difficulty must be one of: easy, medium, hard
-
-7. Centralized Validation Logic
-
-* Introduced `REQUIRED_FIELDS` to validate question format
-* Avoids repeating validation logic and improves maintainability
-
----
-
-### ❌ Rejected Optimizations
-
-1. Regex-Based Parsing
-
-* AI suggested using regular expressions for parsing questions
-* Rejected because:
-
-  * Adds unnecessary complexity
-  * Current approach is simpler and sufficient for the expected format
-
-2. Asynchronous API Requests
-
-* AI suggested using async/await for API calls
-* Rejected because:
-
-  * Only a single request is made at a time
-  * Would make the code more complex without significant benefit
-
----
-
-## CLEAR Evaluation
-
-Each AI suggestion was evaluated using the CLEAR checklist:
-
-* **Correct**
-  Verified that all changes worked correctly and did not introduce new bugs.
-
-* **Logical**
-  Ensured the optimizations made sense within the program structure and flow.
-
-* **Efficient**
-  Evaluated whether the changes improved performance or reduced unnecessary operations.
-
-* **Appropriate**
-  Avoided over-engineering or adding complexity that is not needed for this project.
-
-* **Readable**
-  Prioritized clean, understandable code with clear structure and naming.
-
----
+- Added centralized validation for topic, question count, and difficulty.
+- Limited topic length to reduce prompt-injection and abuse risk.
+- Treated the topic as data in the AI prompt instead of as trusted instructions.
+- Added strict validation and normalization for AI-generated questions, answer options, correct answers, and explanations.
+- Replaced `print()` error output with Python logging so errors are handled without exposing unnecessary details in the UI.
+- Removed the custom CDN-loaded confetti script and replaced it with Streamlit's built-in `st.balloons()`.
+- Added `.env.example` so API key setup is documented without committing real secrets.
+- Confirmed `.env` is ignored by Git.
 
 ## Testing
 
-The optimized code was tested using multiple inputs:
+The following checks were run:
 
-* Topic: Math (easy)
-* Topic: Physics (medium)
-* Topic: History (hard)
+```bash
+.\venv\Scripts\python.exe -m py_compile app.py gen_quiz.py
+```
 
-### Results:
+A validation smoke test also confirmed that:
 
-* Program handled API and input errors without crashing
-* Output format remained consistent
-* Invalid questions were safely skipped
-* Code became easier to read and extend
+- Valid quiz data parses correctly.
+- Overly long generated questions are rejected.
+- Empty topics are rejected.
 
----
+## Ethical AI Reflection
 
-## Conclusion
-
-Using AI tools significantly improved the quality of the codebase. The optimizations made the program more modular, readable, and maintainable. Not all AI suggestions were accepted, and the CLEAR checklist helped ensure that only meaningful and appropriate improvements were applied.
+AI-generated code can be useful, but it still needs human review. The most important lesson from this security pass is that AI output should not be trusted automatically. User input must be validated, generated content must be checked before display or use, and secrets must be protected. Ethical use of AI means being responsible for the code after it is generated, especially when the app depends on user input and external AI services.

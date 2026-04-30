@@ -1,7 +1,14 @@
 import random
+
 import streamlit as st
-import streamlit.components.v1 as components
-from gen_quiz import generate_questions
+
+from gen_quiz import (
+    ALLOWED_DIFFICULTIES,
+    MAX_QUESTION_COUNT,
+    MIN_QUESTION_COUNT,
+    generate_questions,
+    validate_generation_inputs,
+)
 
 st.set_page_config(page_title="AI Quiz Generator", layout="centered")
 
@@ -27,9 +34,9 @@ def reset_quiz_state():
 def prepare_questions(raw_questions):
     prepared = []
     shuffled = {}
-    for i, q in enumerate(raw_questions):
-        prepared.append(q)
-        opts = list(q["options"].items())
+    for i, question in enumerate(raw_questions):
+        prepared.append(question)
+        opts = list(question["options"].items())
         random.shuffle(opts)
         shuffled[i] = opts
     return prepared, shuffled
@@ -44,8 +51,6 @@ def render_sticky_progress(answered, total):
         for i in range(total)
     )
 
-    # Bar starts VISIBLE. JS only hides it when at the very top.
-    # If JS fails -> bar stays visible (safe fallback).
     st.markdown(
         f"""
         <style>
@@ -99,51 +104,13 @@ def render_sticky_progress(answered, total):
         <div id="sp-bar">
             <div class="sp-top">
                 <span>Progress</span>
-                <span>{answered} / {total} &nbsp;·&nbsp; {percent}%</span>
+                <span>{answered} / {total} &nbsp;|&nbsp; {percent}%</span>
             </div>
             <div class="sp-track"><div class="sp-fill"></div></div>
             <div class="sp-dots">{dots_html}</div>
         </div>
         """,
         unsafe_allow_html=True,
-    )
-
-
-# ---------------- CONFETTI ---------------- #
-def render_confetti():
-    components.html(
-        """
-        <script>
-        (function tryConfetti(tries) {
-            const p = window.parent;
-            if (!p.confetti) {
-                if (!p.document.getElementById('confetti-script')) {
-                    const s = p.document.createElement('script');
-                    s.id = 'confetti-script';
-                    s.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js';
-                    s.onload = () => fireConfetti();
-                    p.document.head.appendChild(s);
-                } else if (tries < 20) {
-                    setTimeout(() => tryConfetti(tries + 1), 100);
-                }
-                return;
-            }
-            fireConfetti();
-        })(0);
-
-        function fireConfetti() {
-            const c = window.parent.confetti;
-            const end = Date.now() + 3000;
-            const colors = ['#2dd4bf', '#0ea5e9', '#818cf8', '#f472b6', '#facc15'];
-            (function frame() {
-                c({ particleCount: 6, angle: 60,  spread: 55, origin: { x: 0 }, colors });
-                c({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors });
-                if (Date.now() < end) requestAnimationFrame(frame);
-            })();
-        }
-        </script>
-        """,
-        height=1,
     )
 
 
@@ -160,8 +127,10 @@ for key, default in [
 
 # ---------------- INPUT ---------------- #
 topic = st.text_input("Enter topic")
-num_questions = st.number_input("Number of questions", 1, 20, 5)
-difficulty = st.selectbox("Difficulty", ["easy", "medium", "hard"])
+num_questions = st.number_input(
+    "Number of questions", MIN_QUESTION_COUNT, MAX_QUESTION_COUNT, 5
+)
+difficulty = st.selectbox("Difficulty", sorted(ALLOWED_DIFFICULTIES))
 
 
 # ---------------- BUTTON CONTROL ---------------- #
@@ -169,26 +138,34 @@ quiz_generated = len(st.session_state.questions) > 0
 
 if not quiz_generated:
     if st.button("Generate Questions", type="primary"):
-        if not topic.strip():
-            st.warning("Enter a topic.")
+        try:
+            safe_topic, safe_num_questions, safe_difficulty = validate_generation_inputs(
+                topic, int(num_questions), difficulty
+            )
+        except ValueError as error:
+            st.warning(str(error))
         else:
             clear_answer_state()
             st.session_state.submitted = False
             st.session_state.score = 0
 
             with st.spinner("Generating questions..."):
-                questions = generate_questions(topic, int(num_questions), difficulty)
+                questions = generate_questions(
+                    safe_topic, safe_num_questions, safe_difficulty
+                )
 
             if not questions:
-                st.error("No questions generated. Try again.")
+                st.error(
+                    "No valid questions were generated. Try a clearer topic or try again."
+                )
             else:
-                questions = questions[:num_questions]
+                questions = questions[:safe_num_questions]
                 random.shuffle(questions)
                 prepared, shuffled = prepare_questions(questions)
                 st.session_state.questions = prepared
                 st.session_state.shuffled_options = shuffled
 else:
-    if st.button("↺ Restart"):
+    if st.button("Restart"):
         reset_quiz_state()
         st.rerun()
 
@@ -200,21 +177,20 @@ if st.session_state.questions:
 
     render_sticky_progress(answered, total)
 
-    # Spacer so content doesn't sit under the fixed bar
     st.markdown("<div style='height:5rem'></div>", unsafe_allow_html=True)
 
     user_answers = []
 
-    for i, q in enumerate(st.session_state.questions):
+    for i, question in enumerate(st.session_state.questions):
         is_answered = st.session_state.get(f"q{i}") is not None
-        indicator = "✅" if is_answered else "⬜"
+        indicator = "[x]" if is_answered else "[ ]"
         st.markdown(f"### {indicator} Question {i + 1}")
-        st.write(q["question"])
+        st.write(question["question"])
 
         options = st.session_state.shuffled_options.get(i, [])
-        option_list = [f"{k}) {v}" for k, v in options]
+        option_list = [f"{key}) {value}" for key, value in options]
         selected = st.radio("Select an answer:", option_list, key=f"q{i}", index=None)
-        user_answers.append((selected, q))
+        user_answers.append((selected, question))
         st.markdown("---")
 
     # ---------------- SUBMIT ---------------- #
@@ -226,42 +202,43 @@ if st.session_state.questions:
         score = 0
         st.session_state.submitted = True
 
-        st.markdown("## 📊 Results")
+        st.markdown("## Results")
 
-        for i, (selected, q) in enumerate(user_answers):
+        for i, (selected, question) in enumerate(user_answers):
             selected_key = selected.split(")")[0]
-            correct = q["correct_answer"]
+            correct = question["correct_answer"]
 
             if selected_key == correct:
-                st.success(f"**Q{i+1}: Correct ✓**")
+                st.success(f"**Q{i + 1}: Correct**")
                 score += 1
             else:
-                correct_text = q["options"][correct]
+                correct_text = question["options"][correct]
                 st.error(
-                    f"**Q{i+1}: Incorrect ✗** — Correct: {correct}) {correct_text}"
+                    f"**Q{i + 1}: Incorrect** - Correct: {correct}) {correct_text}"
                 )
 
-            st.info(f"💡 {q['explanation']}")
+            st.info(f"Explanation: {question['explanation']}")
 
         st.session_state.score = score
         pct = (score / total) * 100
 
         if pct == 100:
-            grade = "🏆 Perfect score!"
+            grade = "Perfect score!"
         elif pct >= 80:
-            grade = "🎉 Great job!"
+            grade = "Great job!"
         elif pct >= 60:
-            grade = "👍 Not bad!"
+            grade = "Not bad!"
         else:
-            grade = "📚 Keep practicing!"
+            grade = "Keep practicing!"
 
-        st.markdown(f"## Score: {score}/{total} ({pct:.0f}%) — {grade}")
-        render_confetti()
+        st.markdown(f"## Score: {score}/{total} ({pct:.0f}%) - {grade}")
+        if pct == 100:
+            st.balloons()
 
 
 # ---------------- SIDEBAR ---------------- #
 st.sidebar.markdown("## Quiz Info")
-st.sidebar.write(f"**Topic:** {topic or '—'}")
+st.sidebar.write(f"**Topic:** {topic or '-'}")
 st.sidebar.write(f"**Difficulty:** {difficulty}")
 st.sidebar.write(f"**Questions:** {len(st.session_state.questions)}")
 
