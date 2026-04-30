@@ -1,6 +1,7 @@
 import random
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from gen_quiz import (
     ALLOWED_DIFFICULTIES,
@@ -111,6 +112,94 @@ def render_sticky_progress(answered, total):
         </div>
         """,
         unsafe_allow_html=True,
+    )
+
+
+# ---------------- CONFETTI ---------------- #
+def render_canvas_confetti():
+    components.html(
+        """
+        <script>
+        const parentDoc = window.parent.document;
+        const oldCanvas = parentDoc.getElementById("quiz-confetti-canvas");
+        if (oldCanvas) {
+            oldCanvas.remove();
+        }
+
+        const canvas = parentDoc.createElement("canvas");
+        canvas.id = "quiz-confetti-canvas";
+        canvas.style.position = "fixed";
+        canvas.style.inset = "0";
+        canvas.style.width = "100vw";
+        canvas.style.height = "100vh";
+        canvas.style.pointerEvents = "none";
+        canvas.style.zIndex = "999999";
+        parentDoc.body.appendChild(canvas);
+
+        const ctx = canvas.getContext("2d");
+        const colors = ["#2dd4bf", "#0ea5e9", "#818cf8", "#f472b6", "#facc15"];
+        const pieces = [];
+        const duration = 2800;
+        const start = performance.now();
+
+        function resizeCanvas() {
+            canvas.width = window.parent.innerWidth;
+            canvas.height = window.parent.innerHeight;
+        }
+
+        function createPiece() {
+            return {
+                x: Math.random() * canvas.width,
+                y: -20 - Math.random() * 80,
+                w: 6 + Math.random() * 8,
+                h: 8 + Math.random() * 12,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speed: 2 + Math.random() * 4,
+                drift: -1.5 + Math.random() * 3,
+                rotation: Math.random() * Math.PI,
+                spin: -0.18 + Math.random() * 0.36
+            };
+        }
+
+        function seedConfetti() {
+            for (let i = 0; i < 150; i += 1) {
+                pieces.push(createPiece());
+            }
+        }
+
+        function drawPiece(piece) {
+            ctx.save();
+            ctx.translate(piece.x, piece.y);
+            ctx.rotate(piece.rotation);
+            ctx.fillStyle = piece.color;
+            ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+            ctx.restore();
+        }
+
+        function animate(now) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (const piece of pieces) {
+                piece.x += piece.drift;
+                piece.y += piece.speed;
+                piece.rotation += piece.spin;
+                drawPiece(piece);
+            }
+
+            if (now - start < duration) {
+                requestAnimationFrame(animate);
+            } else {
+                canvas.remove();
+            }
+        }
+
+        resizeCanvas();
+        seedConfetti();
+        window.parent.addEventListener("resize", resizeCanvas);
+        requestAnimationFrame(animate);
+        </script>
+        """,
+        height=0,
     )
 
 
@@ -232,8 +321,8 @@ if st.session_state.questions:
             grade = "Keep practicing!"
 
         st.markdown(f"## Score: {score}/{total} ({pct:.0f}%) - {grade}")
-        if pct == 100:
-            st.balloons()
+        if pct >= 30:
+            render_canvas_confetti()
 
 
 # ---------------- SIDEBAR ---------------- #
