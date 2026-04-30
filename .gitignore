@@ -7,6 +7,7 @@ venv/
 # python cache
 __pycache__/
 *.pyc
+docx_render/
 
 # vscode
 .vscode/
